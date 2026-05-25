@@ -34,7 +34,10 @@ go mod init github.com/gesatessa/sbox
 
 #### w & r
 `http.ResponseWriter`: provides methods for assembling an HTTP response & sending it to the user.
+
 `*http.Request`: is a pointer to a struct, holding information about the current request.
+- r.Method
+- r.URL.Path
 
 ```sh
 # /tmp/ & then run
@@ -151,7 +154,72 @@ curl -i -H "Range: bytes=100-199" --output - http://localhost:8080/static/img/lo
 
 for frequently-served files, at least, it's highly likely that `http.FileServer` will be serving static files in `./ui/static` from RAM rather than making the relatively slow round-trip to hard disk.
 
+## configuration & error handling
 
+### managing configuration settings
+- separation between configuration settings & code
+- managing configuration settings at runtime (based on the environment: dev, testing, prod)
+
+```sh
+go run ./cmd/web -help
+# Usage of /home/skye/.cache/go-build/8e/8e95...dea-d/web:
+#   -addr string
+#         HTTP network address (default ":8080")
+
+go run ./cmd/web -addr=":4000
+```
+
+### structured logging
+the `log/slog` package from the standard library.
+
+NOTE: all structured loggers have a structured logging handler associated with them (not to be confused with an HTTP handler).
+
+```go
+addr := flag.String("addr", ":8080", "HTTP network address")
+
+// nil: no customization
+logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+logger.Info("starting server", "addr", *addr)
+// {"time":"2026-05-25T13:21:04.231","level":"INFO","msg":"starting server","addr":":8080"}
+```
+
+// Debug, Info, Warn, Error
+
+In `staging` or `production` environments, we can redirect the log stream for archival.
+IMPORTANT: the final destination of the logs can be managed by the execution environment independently of the application.
+```go
+// redirect the standard out stream to an on-disk file
+go run ./cmd/web >> /tmp/web.log
+
+```
+
+NOTE: custom loggers created by `slog.New()` are concurrency-safe.
+We can share a single logger and use it across multiple goroutines and in the HTTP handlers without needing to worry about race conditions.
+That said, ...
+
+### dependency injection
+
+Most web applications will have multiple dependencies that their handlers need to access:
+- db connection pool,
+- centralized error handlers
+> Q: How can we make any dependency available to our handlers?
+
+=> **inject dependencies into the handlers**
+This - in comparison to having a gloval variable - has the benefit to:
+- make the code more explicit
+- less error-prone
+- easier to unit test
+
+> put the dependencies into a custom `application` struct, and define the handlers as method against it.
+
+#### env variables
+
+```go
+// returns empty string if no env. variable is provided.
+addr := os.Getenv("APP_ADDR")
+
+```
 
 ## MiSK
 
@@ -165,6 +233,9 @@ r.PathValue("id") // always a string
 ### log
 ```go
 log.Print("starting server on :8080")
+
+log.Print("starting server on ", *addr)
+log.Printf("starting server on %s", *addr)
 
 log.Fatal(err)
 ```
@@ -189,6 +260,7 @@ fmt.Fprintf(w, "item id: %d...", id)
 302     temporarily redirect
 
 # 4xx
+400     bad request
 404     not found
 405     method not allowed
 
@@ -207,7 +279,9 @@ http.NotFound(w, r)
 if err != nil {
     log.Print(err.Error())
     // log.Printf("error parsing template: %v", err)
+
     http.Error(w, "internal server error", 5xx)
+    http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
     return
 }
 
@@ -245,3 +319,4 @@ curl -i -X POST localhost:8080/
 ## WTF
 
 2.10
+3.3     closures for dependency injection
