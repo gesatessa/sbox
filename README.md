@@ -229,7 +229,53 @@ addr := os.Getenv("APP_ADDR")
 
 ```
 ## data-driven responses
-database driver: acts as a *middleman* between `MySQL` and our Go application
+database driver: acts as a *middleman* between `MySQL` and our Go application, translating commands between Go and the MySQL database itself.
+
+```sh
+# get the latest version with the major release 1
+go get github.com/go-sql-driver/mysql@v1
+
+cat go.mod
+
+# is not generated to b
+cat go.sum
+
+go mod verify
+go mod download
+```
+
+upgrading a package
+```sh
+go get github.com/foo/bar
+
+# vs.
+# ⚠️ using `-u` flag increases the risk of breakes when upgrading packages.
+go get -u github.com/foo/bar
+
+```
+
+removing unused packages
+```sh
+go get github.com/foo/bar@none
+
+# automatically removes any unused packages from go.mod and go.sum
+go mod tidy
+
+```
+📢 Go won't know what "mysql" means until we register `the MySQL driver` with a blank import.
+```sh
+{"time":"2026-05-25T22:00:11.687718226+02:00","level":"ERROR","msg":"sql: unknown driver \"mysql\" (forgotten import?)"}
+exit status 1
+```
+Don't forget to add this to the imports:
+```go
+import (
+    "database/sql"
+
+    _ "github.com/go-sql-driver/mysql"
+)
+```
+
 
 > create a `standalone models package`, so that our database logic is reusable and decoupled from the web application.
 
