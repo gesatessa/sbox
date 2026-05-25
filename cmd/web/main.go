@@ -16,6 +16,7 @@ type config struct {
 // hold the application-wide dependencies.
 type application struct {
 	logger *slog.Logger
+	cfg    config
 }
 
 func main() {
@@ -37,26 +38,11 @@ func main() {
 	// initialize a new instance of the application struct, containing the dependencies.
 	app := &application{
 		logger: logger,
+		cfg:    cfg,
 	}
 
-	mux := http.NewServeMux()
-
-	fileServer := http.FileServer(http.Dir(cfg.static))
-	// register the file server as the handler for all URL paths starting with "/static/".
-	// The http.StripPrefix function is used to remove the "/static" prefix from the URL path before the file server handles the request.
-	// For example, if the URL path is "/static/css/style.css",
-	// the file server will look for the file "./ui/static/css/style.css" on the filesystem.
-	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
-
-	// register the home function as the handler for the root path.
-	mux.HandleFunc("GET /{$}", app.home)
-	mux.HandleFunc("GET /snippet/view/{id}", app.snippetView)
-
 	logger.Info("starting server", "addr", cfg.addr)
-	err := http.ListenAndServe(cfg.addr, mux)
-	// any error returned by ListenAndServe is ALWAYS non-nil. Log the error and exit the program.
-	// logger.Error("failed to start server", "error", err)
+	err := http.ListenAndServe(cfg.addr, app.routes())
 	logger.Error(err.Error())
 	os.Exit(1)
-
 }

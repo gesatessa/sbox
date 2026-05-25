@@ -213,6 +213,14 @@ This - in comparison to having a gloval variable - has the benefit to:
 
 > put the dependencies into a custom `application` struct, and define the handlers as method against it.
 
+### isolating the application routes
+
+The responsibilities of `main()` should be limited to:
+- parsing the runtime configuration settings for the application
+- establishing the dependencies for the handlers
+- running the HTTP server
+
+
 #### env variables
 
 ```go
@@ -220,6 +228,12 @@ This - in comparison to having a gloval variable - has the benefit to:
 addr := os.Getenv("APP_ADDR")
 
 ```
+## data-driven responses
+database driver: acts as a *middleman* between `MySQL` and our Go application
+
+> create a `standalone models package`, so that our database logic is reusable and decoupled from the web application.
+
+
 
 ## MiSK
 
