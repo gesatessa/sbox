@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"runtime/debug"
 	"time"
 )
 
@@ -11,9 +12,10 @@ func (app *application) serverError(w http.ResponseWriter, r *http.Request, err 
 	var (
 		method = r.Method
 		url    = r.URL.Path
-		// trace  = string(debug.Stack())
+		trace  = string(debug.Stack())
 	)
-	app.logger.Error(err.Error(), "method", method, "url", url)
+	app.logger.Error(err.Error(), "method", method, "url", url, "trace", trace)
+	// app.logger.Error(err.Error(), "method", method, "url", url)
 	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 

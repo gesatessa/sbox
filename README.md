@@ -326,6 +326,27 @@ Where you position the middleware in the chain of handlers will affect the behav
 
 In any middleware handler, code which comes before `next.ServeHTTP()` will be executed on the way down the chain, and any code after `next.ServeHTTP()` - or in a deferred function - will be executed on the way back up.
 
+### panic recovery
+
+REMEMBER: Go's HTTP server handles requests concurrently, with each HTTP request handled in its own separate goroutine.
+
+NOTE: Go's HTTP server automatically recovers any panics in the goroutines it created.
+
+> deferred functions in the current goroutine are always called following a panic.
+
+#### panic recovery in background goroutines
+
+> our middleware will only recover panics that happen in the same goroutine that executed the `recoverPanic()` middleware.
+
+### composable middleware chain
+
+```go
+// converts this:
+return mw1(mw2(mw3(myHandler)))
+
+// to:
+return alice.New(mw1, mw2, mw3).Then(myHandler)
+```
 
 ## MiSK
 
@@ -456,10 +477,17 @@ curl -iL -d "" localhost:8080/snippet/create
 
 ./ui/static
 ```
+## RND
+
+### TCP
+
+A TCP connection is uniquely identified by:
+> (source IP, source port, destination IP, destination port)
 
 
 ## advanced
 
+### val vs. ref
 ```go
 
 type templateData struct {
@@ -472,9 +500,41 @@ What this means? vs. `Snippet *models.Snippet`
 - You get a copy
 - No nil possible
 
+### defer
+This means:
+
+```go
+defer func() {
+    ...
+}()
+```
+> Defer the execution of this anonymous function call.
+
+Best equivalent in python is
+```py
+def do_work():
+    try:
+        print("doing work")
+        raise ValueError("boom")
+    finally:
+        print("cleanup runs no matter what")
+```
+or
+```py
+with open("data.txt") as f:
+    data = f.read()
+
+# f = open("data.txt")
+# try:
+#     data = f.read()
+# finally:
+#     f.close()
+```
+
 ## WTF
 
 2.10
 3.3     closures for dependency injection
 5.6     custom template functions
 6.2     CSP (content-security policy) section
+6.4     panic recovery
