@@ -296,7 +296,35 @@ Go provides 3 different methods for executing database queries:
 - `DB.Exec()`: used for statements not returning rows
 
 
+## middleware
 
+REMEMBER:
+> You can think of a Go web application as a chain of `ServeHTTP()` methods being called one after another.
+
+servemus'x `SErveHTTP()` => handler's `ServeHTTP()`
+
+The pattern for creating our own middleware looks like this:
+```go
+func commonHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// any code here will execute on the way down the chain.
+
+        // stop executing the chain if the user is not authorized.
+        if !(isAuthorized(r)) {
+            w.WriteHeader(http.StatusForbidden)
+            return
+        }
+
+		next.ServeHTTP(w, r)
+        // any code here will execute on the way back up the chain.
+	})
+}
+
+```
+
+Where you position the middleware in the chain of handlers will affect the behavior of the application.
+
+In any middleware handler, code which comes before `next.ServeHTTP()` will be executed on the way down the chain, and any code after `next.ServeHTTP()` - or in a deferred function - will be executed on the way back up.
 
 
 ## MiSK
@@ -449,3 +477,4 @@ What this means? vs. `Snippet *models.Snippet`
 2.10
 3.3     closures for dependency injection
 5.6     custom template functions
+6.2     CSP (content-security policy) section
