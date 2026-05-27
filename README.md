@@ -79,6 +79,8 @@ w.Write([]byte("Hellooo))
 io.WriteString(w, "Hellooo")
 fmt.Fprint(w, "Helloooo")
 
+
+buf.WriteTo(w)
 ```
 
 content sniffing:
@@ -274,10 +276,26 @@ import (
 
     _ "github.com/go-sql-driver/mysql"
 )
+
+//                       👇
+// db, err := sql.Open("mysql", dsn)
 ```
 
+`sql.Open()` returns a `sql.DB` value, a ppol of many connections. Go manages the connections as needed.
 
-> create a `standalone models package`, so that our database logic is reusable and decoupled from the web application.
+### design the database model
+CORE IDEA: 
+> create a `standalone models package` (encapsulate the code for working with MySQL in a separate package), so that our database logic is reusable and decoupled from the web application.
+
+Notice that our database logic won't be tied to our handlers. 
+A handlre's job is simply validating requests & writing responses.
+
+Go provides 3 different methods for executing database queries:
+- `DB.Query()` SELECT
+- `DB.QueryRow()` SELECT
+- `DB.Exec()`: used for statements not returning rows
+
+
 
 
 
@@ -300,14 +318,43 @@ log.Printf("starting server on %s", *addr)
 log.Fatal(err)
 ```
 
-# fmt ----
+### fmt
 ```go
-// s
+// s -----
 fmt.Sprintf("snippet id %d ...", id)
 
-// f
+
+// f -----
 fmt.Fprintf(w, "item id: %d...", id)
+// write the snippet data as a plain-text HTTP response body.
+fmt.Fprintf(w, "%v", snippet)
+
 ```
+
+### errors
+
+```go
+if err != nil {
+    if errors.Is(err, sql.ErrNoRows) {
+        return Snippet{}, ErrNoRecord
+    } else {
+        return Snippet{}, err
+    }
+}
+
+var ErrNoRecord = errors.New("models: no matching record found")
+
+# -----
+
+if err != nil {
+    logger.Error(err.Error())
+    os.Exit(1)
+}
+
+# -----
+
+```
+
 
 ### Status Code
 ```yml
@@ -318,6 +365,7 @@ fmt.Fprintf(w, "item id: %d...", id)
 # 3xx
 301     permanent redirect
 302     temporarily redirect
+303     see other
 
 # 4xx
 400     bad request
@@ -345,6 +393,8 @@ if err != nil {
     return
 }
 
+http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
+
 ```
 
 ### curl
@@ -356,6 +406,9 @@ curl -I localhost:8080/
 
 curl -i -d "" localhost:8080/
 curl -i -X POST localhost:8080/
+
+# -L: automatically follow redirect
+curl -iL -d "" localhost:8080/snippet/create
 ```
 
 ## project structure
@@ -376,7 +429,23 @@ curl -i -X POST localhost:8080/
 ./ui/static
 ```
 
+
+## advanced
+
+```go
+
+type templateData struct {
+	Snippet models.Snippet
+}
+
+```
+What this means? vs. `Snippet *models.Snippet`
+- Snippet is always present
+- You get a copy
+- No nil possible
+
 ## WTF
 
 2.10
 3.3     closures for dependency injection
+5.6     custom template functions

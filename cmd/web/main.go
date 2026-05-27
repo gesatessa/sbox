@@ -3,11 +3,15 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
 
+	// we need the driver's init() function to be called to register the MySQL driver with the database/sql package.
 	_ "github.com/go-sql-driver/mysql"
+
+	"github.com/gesatessa/sbox/internal/models"
 )
 
 // hold the application configuration settings.
@@ -19,8 +23,10 @@ type config struct {
 
 // hold the application-wide dependencies.
 type application struct {
-	logger *slog.Logger
-	cfg    config
+	logger        *slog.Logger
+	cfg           config
+	snippets      *models.SnippetModel
+	templateCache map[string]*template.Template
 }
 
 func main() {
@@ -45,12 +51,24 @@ func main() {
 		logger.Error(err.Error())
 		os.Exit(1)
 	}
+	// make sure the database connection pool is closed before the main() function exits.
+	// This will help to prevent resource leaks
+	// and ensure that all database connections are properly released when the application shuts down.
 	defer db.Close()
+
+	// initialize a new template cache
+	templateCache, err := newTemplateCache()
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
 
 	// initialize a new instance of the application struct, containing the dependencies.
 	app := &application{
-		logger: logger,
-		cfg:    cfg,
+		logger:        logger,
+		cfg:           cfg,
+		snippets:      &models.SnippetModel{DB: db},
+		templateCache: templateCache,
 	}
 
 	logger.Info("starting server", "addr", cfg.addr)
@@ -66,6 +84,10 @@ func openDB(dsn string) (*sql.DB, error) {
 		return nil, err
 	}
 
+	// Ping() is used to verify that the database connection is alive and working properly.
+	// It sends a simple query to the database and waits for a response.
+	// If the connection is successful, it returns nil. If there is an error (e.g., network issue, authentication failure, etc.),
+	// it returns an error value describing the problem.
 	if err = db.Ping(); err != nil {
 		db.Close()
 		return nil, err
