@@ -4,19 +4,28 @@
 <form action="/snippet/create" method="POST">
     <div>
         <label for="">Title:</label>
-        <input type="text" name="title" id="">
+        {{with .Form.FieldErrors.title}}
+        <label for="" class="error">{{.}}</label>
+        {{end}}
+        <input type="text" name="title" value="{{.Form.Title}}">
     </div>
 
     <div>
         <label for="">Content:</label>
-        <textarea name="content" id=""></textarea>
+        {{with .Form.FieldErrors.content}}
+        <label for="" class="error">{{.}}</label>
+        {{end}}
+        <textarea name="content" id="">{{.Form.Content}}</textarea>
     </div>
 
     <div>
         <label for="">Expires in:</label>
-        <input type="radio" name="expires" value="30"> 30 DAYS
-        <input type="radio" name="expires" value="7" checked> 7 DAYS
-        <input type="radio" name="expires" value="1"> 1 DAY
+        {{with .Form.FieldErrors.expires}}
+        <label for="" class="error">{{.}}</label>
+        {{end}}
+        <input type="radio" name="expires" value="30" {{if eq .Form.Expires 30}}checked{{end}}> 30 DAYS
+        <input type="radio" name="expires" value="7" {{if eq .Form.Expires 7}}checked{{end}}> 7 DAYS
+        <input type="radio" name="expires" value="1" {{if eq .Form.Expires 1}}checked{{end}}> 1 DAY
     </div>
 
     <div>

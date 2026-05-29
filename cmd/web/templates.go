@@ -14,6 +14,9 @@ type templateData struct {
 	CurrentYear int
 	Snippet     models.Snippet
 	Snippets    []models.Snippet
+	// add a new field to hold any form data that we want to pass to the template.
+	// This can be used to repopulate form fields after a validation error occurs.
+	Form any
 }
 
 func humanDate(t time.Time) string {

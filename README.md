@@ -366,6 +366,8 @@ r.ParseForm()
 r.PostForm.Get("title")
 // vs.
 r.Form.Get("title")
+// vs.
+r.FormValue("title")
 
 // ----- query string parameters
 
@@ -403,6 +405,18 @@ fmt.Sprintf("snippet id %d ...", id)
 fmt.Fprintf(w, "item id: %d...", id)
 // write the snippet data as a plain-text HTTP response body.
 fmt.Fprintf(w, "%v", snippet)
+
+// ---
+fieldErrors := make(map[string]string)
+
+//...
+if len(fieldErrors) > 0 {
+    fmt.Fprint(w, fieldErrors)
+    return
+}
+// ---
+
+
 
 ```
 
@@ -446,6 +460,7 @@ if err != nil {
 400     bad request
 404     not found
 405     method not allowed
+422     unprocessable content/entity
 
 # 5xx
 500     internal server error
@@ -524,6 +539,9 @@ A TCP connection is uniquely identified by:
 
 ## advanced
 
+### map vs. struct
+Unlike `struct` fields, `map` key names don't have to be capitalized in order to access them from a template.
+
 ### val vs. ref
 ```go
 
@@ -546,6 +564,29 @@ This means:
 ```go
 // initialize
 fieldErrors := make(map[string]string)
+
+
+// vs.
+
+
+// -----
+
+type Validator struct {
+	FieldErrors map[string]string
+}
+
+func (v *Validator) AddFieldError(key, msg string) {
+	if v.FieldErrors == nil {
+		v.FieldErrors = make(map[string]string)
+	}
+
+	if _, exists := v.FieldErrors[key]; !exists {
+		v.FieldErrors[key] = msg
+	}
+}
+
+
+// -----
 
 ```
 
@@ -577,6 +618,28 @@ with open("data.txt") as f:
 #     f.close()
 ```
 
+
+### generic function
+Generic functions work with values of different types.
+```go
+func PermittedValue[T comparable](val T, permittedValues ...T) bool {
+	return slices.Contains(permittedValues, val)
+}
+
+
+// -----
+
+func count[T comparable](v T, s []T) int {
+    count := 0
+    for _, itm := range s {
+        if v == itm {
+            count++
+        }
+    }
+    return count
+}
+
+```
 ## WTF
 
 2.10
