@@ -28,6 +28,7 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("GET /{$}", app.home)
 	mux.HandleFunc("GET /snippet/view/{id}", app.snippetView)
 	mux.HandleFunc("POST /snippet/create", app.snippetCreatePost)
+	mux.HandleFunc("GET /snippet/create", app.snippetCreate)
 
 	// standard middleware chain for all routes
 	standardMW := alice.New(app.recoverPanic, app.logRequest, commonHeaders)

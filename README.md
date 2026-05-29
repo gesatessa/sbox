@@ -339,6 +339,10 @@ NOTE: Go's HTTP server automatically recovers any panics in the goroutines it cr
 > our middleware will only recover panics that happen in the same goroutine that executed the `recoverPanic()` middleware.
 
 ### composable middleware chain
+install the package
+```sh
+go get github.com/justinas/alice@v1
+```
 
 ```go
 // converts this:
@@ -347,6 +351,28 @@ return mw1(mw2(mw3(myHandler)))
 // to:
 return alice.New(mw1, mw2, mw3).Then(myHandler)
 ```
+
+This way, we can assign our middleware chain to variables:
+```go
+
+```
+
+
+## form
+
+```go
+r.ParseForm()
+
+r.PostForm.Get("title")
+// vs.
+r.Form.Get("title")
+
+// ----- query string parameters
+
+r.URL.Query().Get("title")
+
+```
+
 
 ## MiSK
 
@@ -460,6 +486,17 @@ curl -i -X POST localhost:8080/
 curl -iL -d "" localhost:8080/snippet/create
 ```
 
+### str
+
+```go
+utf8.RuneCountInString(title)
+
+strings.TrimSpace(title) == ""
+
+
+
+```
+
 ## project structure
 
 ```yml
@@ -502,6 +539,15 @@ What this means? vs. `Snippet *models.Snippet`
 
 ### defer
 This means:
+
+
+### map
+
+```go
+// initialize
+fieldErrors := make(map[string]string)
+
+```
 
 ```go
 defer func() {

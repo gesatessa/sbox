@@ -17,7 +17,14 @@ type templateData struct {
 }
 
 func humanDate(t time.Time) string {
-	return t.Format("02 Jan 2006 at 15:04")
+	if t.IsZero() {
+		return ""
+	}
+
+	// convert the time to UTC before formatting it.
+	// This ensures that the date and time are displayed in a consistent way regardless of the server's local tz
+
+	return t.UTC().Format("02 Jan 2006 at 15:04")
 }
 
 var funcs = template.FuncMap{

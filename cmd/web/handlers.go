@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/gesatessa/sbox/internal/models"
 )
@@ -76,15 +78,52 @@ func (app *application) snippetView(w http.ResponseWriter, r *http.Request) {
 	app.render(w, r, http.StatusOK, "view.tpl.html", data)
 }
 
-func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
-	// dummy data to test the handler
-	// title := "task 1"
-	// content := "this is the content of task 1"
-	// expires := 1
+func (app *application) snippetCreate(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
 
-	title := "Why learn Go?"
-	content := "Go is designed to be simple & efficient. Especially a great choice for building web applications & microservices."
-	expires := 7
+	app.render(w, r, http.StatusOK, "create.tpl.html", data)
+}
+
+func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request) {
+	// limit the size of the request body to prevent malicious clients
+	// from sending large requests that could consume server resources.
+	r.Body = http.MaxBytesReader(w, r.Body, 1048576) // 1MB
+
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	title := r.FormValue("title")
+	content := r.FormValue("content")
+	expires, err := strconv.Atoi(r.FormValue("expires"))
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	// initialize a map to hold any validation errors that occur during form processing.
+	fieldErrors := make(map[string]string)
+	if strings.TrimSpace(title) == "" {
+		fieldErrors["title"] = "This field cannot be blank"
+	} else if utf8.RuneCountInString(title) > 100 {
+		fieldErrors["title"] = "This field cannot be longer than 100 characters"
+	}
+
+	if strings.TrimSpace(content) == "" {
+		fieldErrors["content"] = "This field cannot be blank"
+	}
+
+	// make sure expires is one of the permitted values (1, 7, or 30).
+	if expires != 1 && expires != 7 && expires != 30 {
+		fieldErrors["expires"] = "This field must equal 1, 7, or 30"
+	}
+
+	if len(fieldErrors) > 0 {
+		fmt.Fprint(w, fieldErrors)
+		return
+	}
 
 	id, err := app.snippets.Insert(title, content, expires)
 	if err != nil {
