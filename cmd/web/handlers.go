@@ -17,11 +17,13 @@ import (
 // 	FieldErrors map[string]string
 // }
 
+// `stract tags` tell th decoder how to map HTML form values into the different struct fields.
+// NOTE: type conversions are handled automatically. (expires from string to int)
 type snippetCreateForm struct {
-	Title   string
-	Content string
-	Expires int
-	validator.Validator
+	Title               string `form:"title"`
+	Content             string `form:"content"`
+	Expires             int    `form:"expires"`
+	validator.Validator `form:"-"`
 }
 
 // func (app *application) home(w http.ResponseWriter, r *http.Request) {
@@ -106,22 +108,13 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 	// from sending large requests that could consume server resources.
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576) // 1MB
 
-	err := r.ParseForm()
+	var form snippetCreateForm
+
+	err := app.decodePostForm(r, &form)
 	if err != nil {
+		// if there is a problem decoding the form, send 400 bad request response to the client.
 		app.clientError(w, http.StatusBadRequest)
 		return
-	}
-
-	expires, err := strconv.Atoi(r.FormValue("expires"))
-	if err != nil {
-		app.clientError(w, http.StatusBadRequest)
-		return
-	}
-
-	form := snippetCreateForm{
-		Title:   r.PostForm.Get("title"),
-		Content: r.PostForm.Get("content"),
-		Expires: expires,
 	}
 
 	form.CheckField(validator.NotBlank(form.Title), "title", "title cannot be blank")

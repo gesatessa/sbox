@@ -375,6 +375,14 @@ r.URL.Query().Get("title")
 
 ```
 
+### automatic form parsing
+
+```sh
+go get github.com/go-playground/form/v4@v4
+```
+
+- initialize a new `*form.Decoder` instance in `main.go` and make it available to the handlers as a dependency
+- 
 
 ## MiSK
 

@@ -11,6 +11,8 @@ import (
 	// we need the driver's init() function to be called to register the MySQL driver with the database/sql package.
 	_ "github.com/go-sql-driver/mysql"
 
+	"github.com/go-playground/form/v4"
+
 	"github.com/gesatessa/sbox/internal/models"
 )
 
@@ -27,6 +29,7 @@ type application struct {
 	cfg           config
 	snippets      *models.SnippetModel
 	templateCache map[string]*template.Template
+	formDecoder   *form.Decoder
 }
 
 func main() {
@@ -63,12 +66,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	// initialize a decoder instance to be added to the application dependencies.
+	formDecoder := form.NewDecoder()
 	// initialize a new instance of the application struct, containing the dependencies.
 	app := &application{
 		logger:        logger,
 		cfg:           cfg,
 		snippets:      &models.SnippetModel{DB: db},
 		templateCache: templateCache,
+		formDecoder:   formDecoder,
 	}
 
 	logger.Info("starting server", "addr", cfg.addr)
