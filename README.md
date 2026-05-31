@@ -404,7 +404,17 @@ setting up the session manager, the basics:
 - establish a `session manager` in `main.go`, and make it available to the handlers.
 - wrap the application routes with the middleware provided by `SessionManager.LoadAndServe()` method
     - do we need the middleware to act on all our application routes? for example on `GET /static/`?
-- 
+- session manager stores the information temporarily in the **request context**
+
+### behind the scenes of session management
+session token: `Cookies` section
+The `MySQL BLOB` contains a `gob-encoded` representation of the session data.
+
+The `LoadAndServe()` middleware checks each incoming request for a `session cookie`.
+If a session cookie is present, it reads the session token fro the cookie & retrieves the corresponding session data from the database (it checks the expiration data).
+Session data is added to the `request context` so it can be used by the http handlers.
+
+## Server & Security Improvements
 
 ## MiSK
 

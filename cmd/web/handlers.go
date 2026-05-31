@@ -10,13 +10,6 @@ import (
 	"github.com/gesatessa/sbox/internal/validator"
 )
 
-// type snippetCreateForm struct {
-// 	Title       string
-// 	Content     string
-// 	Expires     int
-// 	FieldErrors map[string]string
-// }
-
 // `stract tags` tell th decoder how to map HTML form values into the different struct fields.
 // NOTE: type conversions are handled automatically. (expires from string to int)
 type snippetCreateForm struct {
@@ -25,32 +18,6 @@ type snippetCreateForm struct {
 	Expires             int    `form:"expires"`
 	validator.Validator `form:"-"`
 }
-
-// func (app *application) home(w http.ResponseWriter, r *http.Request) {
-// 	w.Header().Add("Server", "Go")
-
-// 	files := []string{
-// 		"./ui/html/base.tpl.html",
-// 		"./ui/html/partials/nav.tpl.html",
-// 		"./ui/html/pages/home.tpl.html",
-// 	}
-
-// 	ts, err := template.ParseFiles(files...)
-// 	if err != nil {
-// 		app.serverError(w, r, err)
-// 		return
-// 	}
-
-// 	// err = ts.Execute(w, nil)
-// 	// Execute the template named "base" from the parsed template set.
-// 	// This is the name of the template defined in the base.tpl.html file.
-// 	// now, the template set contains named templates: base, title, nav, main. instead of containing HTML directly.
-// 	err = ts.ExecuteTemplate(w, "base", nil)
-// 	if err != nil {
-// 		app.serverError(w, r, err)
-// 		return
-// 	}
-// }
 
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	// panic("oooooooooops")
@@ -134,6 +101,8 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 		app.serverError(w, r, err)
 		return
 	}
+	// add the flash message if the post created successfully.
+	app.sessionManager.Put(r.Context(), "flash", "snippet created successfully.")
 
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
 }
