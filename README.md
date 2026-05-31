@@ -416,6 +416,21 @@ Session data is added to the `request context` so it can be used by the http han
 
 ## Server & Security Improvements
 
+### http.Server
+`http.ListenAndServe()` is very useful in short examples and tutorials.
+In real-world applications:
+```go
+// initialize a new http.Server struct:
+srv := &http.Server{
+    Addr:     cfg.addr,
+    Handler:  app.routes(),
+    // force `http.Server` to use our structured logger at Error level for its log messages 
+    ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
+}
+
+```
+
+
 ## MiSK
 
 ### r

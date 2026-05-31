@@ -9,9 +9,9 @@ import (
 	"os"
 	"time"
 
-	
 	"github.com/alexedwards/scs/mysqlstore"
 	"github.com/alexedwards/scs/v2"
+
 	// we need the driver's init() function to be called to register the MySQL driver with the database/sql package.
 	_ "github.com/go-sql-driver/mysql"
 
@@ -89,8 +89,16 @@ func main() {
 		sessionManager: sessionManager,
 	}
 
+	// initialize a new http.Server struct:
+	srv := &http.Server{
+		Addr:     cfg.addr,
+		Handler:  app.routes(),
+		ErrorLog: slog.NewLogLogger(logger.Handler(), slog.LevelError),
+	}
+
 	logger.Info("starting server", "addr", cfg.addr)
-	err = http.ListenAndServe(cfg.addr, app.routes())
+	// err = http.ListenAndServe(cfg.addr, app.routes())
+	err = srv.ListenAndServe()
 	logger.Error(err.Error())
 	os.Exit(1)
 }

@@ -42,7 +42,7 @@ func (app *application) render(w http.ResponseWriter, r *http.Request, statusCod
 		app.serverError(w, r, err)
 		return
 	}
-
+	w.Header().Set("Content-Length", "not a number")
 	w.WriteHeader(statusCode)
 	buf.WriteTo(w)
 
