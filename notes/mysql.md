@@ -100,3 +100,43 @@ SELECT id, title, expires FROM snippets;
 -- should be denied, as `web` is not authorized to drop tables.
 DROP TABLE snippets;
 ```
+
+## session
+- `token` a unique, randomly-generated, identifier for each session
+- `data` the actual session data that is to be shared between HTTP requests. (`BLOB`: binary large object)
+
+
+```sql
+-- current database
+SELECT DATABASE();
+
+-- current user
+-- USER() → the login user (what you connected as)
+-- CURRENT_USER() → the effective user (important for permissions, can differ)
+SELECT USER(), CURRENT_USER();
+
+exit
+```
+
+connect as root user:
+```sh
+sudo mysql
+mysql -u root -p
+
+# confirm it's root user
+SELECT USER(),
+```
+
+prepare `sessions` table:
+```sql
+USE snippetbox;
+
+CREATE TABLE sessions (
+    TOKEN CHAR(43) PRIMARY KEY,
+    data BLOB NOT NULL,
+    expiry TIMESTAMP(6) NOT NULL
+);
+
+CREATE INDEX sessions_expiry_idx ON sessions (expiry);
+
+```

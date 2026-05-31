@@ -6,29 +6,20 @@ import (
 	"github.com/justinas/alice"
 )
 
-// func (app *application) routes() *http.ServeMux {
-// 	mux := http.NewServeMux()
-
-// 	fileServer := http.FileServer(http.Dir(app.cfg.static))
-// 	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
-
-// 	mux.HandleFunc("GET /{$}", app.home)
-// 	mux.HandleFunc("GET /snippet/view/{id}", app.snippetView)
-// 	mux.HandleFunc("POST /snippet/create", app.snippetCreatePost)
-
-// 	return mux
-// }
-
 func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
 
 	fileServer := http.FileServer(http.Dir(app.cfg.static))
 	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
 
-	mux.HandleFunc("GET /{$}", app.home)
-	mux.HandleFunc("GET /snippet/view/{id}", app.snippetView)
-	mux.HandleFunc("POST /snippet/create", app.snippetCreatePost)
-	mux.HandleFunc("GET /snippet/create", app.snippetCreate)
+	// dynamic middleware chain
+	dynamic := alice.New(app.sessionManager.LoadAndSave)
+
+	// alice.ThenFunc() returns `http.Handler` (and not http.HandlerFunc)
+	mux.Handle("GET /{$}", dynamic.ThenFunc(app.home))
+	mux.Handle("GET /snippet/view/{id}", dynamic.ThenFunc(app.snippetView))
+	mux.Handle("POST /snippet/create", dynamic.ThenFunc(app.snippetCreatePost))
+	mux.Handle("GET /snippet/create", dynamic.ThenFunc(app.snippetCreate))
 
 	// standard middleware chain for all routes
 	standardMW := alice.New(app.recoverPanic, app.logRequest, commonHeaders)

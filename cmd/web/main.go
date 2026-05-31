@@ -7,7 +7,11 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
+	
+	"github.com/alexedwards/scs/mysqlstore"
+	"github.com/alexedwards/scs/v2"
 	// we need the driver's init() function to be called to register the MySQL driver with the database/sql package.
 	_ "github.com/go-sql-driver/mysql"
 
@@ -25,11 +29,12 @@ type config struct {
 
 // hold the application-wide dependencies.
 type application struct {
-	logger        *slog.Logger
-	cfg           config
-	snippets      *models.SnippetModel
-	templateCache map[string]*template.Template
-	formDecoder   *form.Decoder
+	logger         *slog.Logger
+	cfg            config
+	snippets       *models.SnippetModel
+	templateCache  map[string]*template.Template
+	formDecoder    *form.Decoder
+	sessionManager *scs.SessionManager
 }
 
 func main() {
@@ -68,13 +73,20 @@ func main() {
 
 	// initialize a decoder instance to be added to the application dependencies.
 	formDecoder := form.NewDecoder()
+
+	// initialize & configure a new session manager:
+	sessionManager := scs.New() // returns a pointer to the SessionManager struct.
+	sessionManager.Store = mysqlstore.New(db)
+	sessionManager.Lifetime = time.Hour * 1
+
 	// initialize a new instance of the application struct, containing the dependencies.
 	app := &application{
-		logger:        logger,
-		cfg:           cfg,
-		snippets:      &models.SnippetModel{DB: db},
-		templateCache: templateCache,
-		formDecoder:   formDecoder,
+		logger:         logger,
+		cfg:            cfg,
+		snippets:       &models.SnippetModel{DB: db},
+		templateCache:  templateCache,
+		formDecoder:    formDecoder,
+		sessionManager: sessionManager,
 	}
 
 	logger.Info("starting server", "addr", cfg.addr)

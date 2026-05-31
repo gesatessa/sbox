@@ -382,6 +382,28 @@ go get github.com/go-playground/form/v4@v4
 ```
 
 - initialize a new `*form.Decoder` instance in `main.go` and make it available to the handlers as a dependency
+- wrap the application routes with the middleware provided by the `SessionManager.LoadAndServe()` method
+
+
+## session
+install the necessary packages (the session manager)
+```sh
+go get github.com/alexedwards/scs/v2@v2
+
+go get github.com/alexedwards/scs/mysqlstore@latest
+```
+
+`alexewards/scs`:
+- server-side only
+- automatic loading and saving of session data via middleware
+- allows renewal of session IDs
+- supports a variety of databases, including MySQL, PostgreSQL and Redis
+
+setting up the session manager, the basics:
+- create a session table
+- establish a `session manager` in `main.go`, and make it available to the handlers.
+- wrap the application routes with the middleware provided by `SessionManager.LoadAndServe()` method
+    - do we need the middleware to act on all our application routes? for example on `GET /static/`?
 - 
 
 ## MiSK
