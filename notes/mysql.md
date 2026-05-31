@@ -140,3 +140,25 @@ CREATE TABLE sessions (
 CREATE INDEX sessions_expiry_idx ON sessions (expiry);
 
 ```
+
+## users
+We'll be storing `bcrypt` hashes of the user passwords in the database (not the raw password).
+The hashes are always exactly 60 char long.
+```sql
+USE snippetbox;
+
+CREATE TABLE users (
+    id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    hashed_password CHAR(60) NOT NULL,
+    created_at DATETIME NOT NULL
+);
+
+-- add a constraint to prevent duplicated email
+-- MySQL will throw ERROR 1062: ER_DUP_ENTRY
+ALTER TABLE users ADD CONSTRAINT users_uc_email UNIQUE (email);
+
+-- now we should see `UNI` in the `Key` column
+DESC users;
+```
