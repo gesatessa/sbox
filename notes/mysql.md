@@ -157,6 +157,8 @@ CREATE TABLE users (
 
 -- add a constraint to prevent duplicated email
 -- MySQL will throw ERROR 1062: ER_DUP_ENTRY
+-- from a business logic & data integrity point of view we are already OK.
+-- HOWEVER, we also need to communicate `email already in use` with the user.
 ALTER TABLE users ADD CONSTRAINT users_uc_email UNIQUE (email);
 
 -- now we should see `UNI` in the `Key` column

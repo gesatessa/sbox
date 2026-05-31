@@ -429,7 +429,12 @@ srv := &http.Server{
 }
 
 ```
-
+## user
+Go has implementations of `Argon2` and `bcrypt` in the `golang.org/x/crypto` package.
+A plus-point of the `bcrypt` implementation is that it includes helper functions to hash & check passwords.
+```sh
+go get golang.org/x/crypto/bcrypt@latest
+```
 
 ## MiSK
 

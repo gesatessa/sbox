@@ -19,6 +19,13 @@ type snippetCreateForm struct {
 	validator.Validator `form:"-"`
 }
 
+type userSignUpForm struct {
+	Name                string `form:"name"`
+	Email               string `form:"email"`
+	Password            string `form:"password"`
+	validator.Validator `form:"-"`
+}
+
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	// panic("oooooooooops")
 	snippets, err := app.snippets.Latest()
@@ -105,4 +112,49 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 	app.sessionManager.Put(r.Context(), "flash", "snippet created successfully.")
 
 	http.Redirect(w, r, fmt.Sprintf("/snippet/view/%d", id), http.StatusSeeOther)
+}
+
+func (app *application) userSignUp(w http.ResponseWriter, r *http.Request) {
+	data := app.newTemplateData(r)
+	data.Form = userSignUpForm{}
+	app.render(w, r, http.StatusOK, "signup.tpl.html", data)
+}
+
+func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintln(w, "login is in progress")
+}
+
+func (app *application) userSignUpPost(w http.ResponseWriter, r *http.Request) {
+	var form userSignUpForm
+
+	err := app.decodePostForm(r, &form)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	form.CheckField(validator.NotBlank(form.Name), "name", "name cannot be blank")
+	form.CheckField(validator.NotBlank(form.Email), "email", "email cannot be blank")
+
+	form.CheckField(validator.MinChars(form.Password, 8), "password", "password must be at least 8 charactors long")
+	form.CheckField(validator.MaxBytes(form.Password, 72), "password", "password must not be more than 72 bytes long")
+
+	// @TODO: add check for valid email addresses.
+
+	if !form.Valid() {
+		data := app.newTemplateData(r)
+		data.Form = form
+		app.render(w, r, http.StatusUnprocessableEntity, "signup.tpl.html", data)
+	}
+
+	err = app.users.Insert(form.Name, form.Email, form.Password)
+	// @TODO: right now every database error is treated as a 500 Internal Server Error.
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.sessionManager.Put(r.Context(), "flash", "Your signup was successful. Please login.")
+
+	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }
