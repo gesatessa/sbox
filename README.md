@@ -455,6 +455,11 @@ if err != nil {
 
 ```
 
+### restricting access
+
+An authenticated user visiting `/snippet/create` should be redirected to `/user/login`.
+We can do this via **middleware**. And adding it the the routes we want to protect.
+
 ## MiSK
 
 ### r
