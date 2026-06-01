@@ -19,7 +19,7 @@ type snippetCreateForm struct {
 	validator.Validator `form:"-"`
 }
 
-type userSignUpForm struct {
+type userForm struct {
 	Name                string `form:"name"`
 	Email               string `form:"email"`
 	Password            string `form:"password"`
@@ -116,16 +116,18 @@ func (app *application) snippetCreatePost(w http.ResponseWriter, r *http.Request
 
 func (app *application) userSignUp(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
-	data.Form = userSignUpForm{}
+	data.Form = userForm{}
 	app.render(w, r, http.StatusOK, "signup.tpl.html", data)
 }
 
 func (app *application) userLogin(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "login is in progress")
+	data := app.newTemplateData(r)
+	data.Form = userForm{}
+	app.render(w, r, http.StatusOK, "login.tpl.html", data)
 }
 
 func (app *application) userSignUpPost(w http.ResponseWriter, r *http.Request) {
-	var form userSignUpForm
+	var form userForm
 
 	err := app.decodePostForm(r, &form)
 	if err != nil {
@@ -166,4 +168,60 @@ func (app *application) userSignUpPost(w http.ResponseWriter, r *http.Request) {
 	app.logger.Info("a new user signed up", "email", form.Email)
 
 	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
+}
+
+// if the credentials match, we add the user's ID to their session data
+// this way, for future requests, we'll know the user is already authenticated, and who that is.
+func (app *application) userLoginPost(w http.ResponseWriter, r *http.Request) {
+	var form userForm
+
+	err := app.decodePostForm(r, &form)
+	if err != nil {
+		app.clientError(w, http.StatusUnprocessableEntity)
+		return
+	}
+
+	id, err := app.users.Authenticate(form.Email, form.Password)
+	if err != nil {
+		if errors.Is(err, models.ErrInvalidCredentials) {
+			form.AddNonFieldError("credentials are invalid")
+
+			// redisplay the login page
+			data := app.newTemplateData(r)
+			data.Form = form
+			app.render(w, r, http.StatusUnprocessableEntity, "login.tpl.html", data)
+		} else {
+			app.serverError(w, r, err)
+		}
+
+		return
+	}
+
+	// it's good practice to generate a new session ID
+	// when the authentication state or privilege levels change for the user.
+	err = app.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	// add the ID of the current user to their session, so that they are now "logged in"
+	app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
+
+	http.Redirect(w, r, "/snippet/create", http.StatusSeeOther)
+}
+
+// renew the session ID & remove the `authenticatedUserID` value from the session
+func (app *application) userLogoutPost(w http.ResponseWriter, r *http.Request) {
+	err := app.sessionManager.RenewToken(r.Context())
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+
+	app.sessionManager.Remove(r.Context(), "authenticatedUserID")
+
+	app.sessionManager.Put(r.Context(), "flash", "you've been logged out.")
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

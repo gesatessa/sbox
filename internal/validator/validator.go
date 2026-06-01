@@ -7,9 +7,11 @@ import (
 	"unicode/utf8"
 )
 
-// contains map of *validation error messages* for our form fields
+// FieldErrors: map of *validation error messages* for our form fields
+// NonFieldErrors: (e.g., invalid credentials)
 type Validator struct {
-	FieldErrors map[string]string
+	NonFieldErrors []string
+	FieldErrors    map[string]string
 }
 
 // this returns a pointer to a `compiled` regexp.Regexp type,
@@ -17,7 +19,7 @@ type Validator struct {
 var EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$")
 
 func (v *Validator) Valid() bool {
-	return len(v.FieldErrors) == 0
+	return len(v.FieldErrors) == 0 && len(v.NonFieldErrors) == 0
 }
 
 func (v *Validator) AddFieldError(key, msg string) {
@@ -29,6 +31,10 @@ func (v *Validator) AddFieldError(key, msg string) {
 	if _, exists := v.FieldErrors[key]; !exists {
 		v.FieldErrors[key] = msg
 	}
+}
+
+func (v *Validator) AddNonFieldError(msg string) {
+	v.NonFieldErrors = append(v.NonFieldErrors, msg)
 }
 
 // if validation check fails, add the error message to the corresponding key (form field).

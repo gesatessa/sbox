@@ -436,6 +436,25 @@ A plus-point of the `bcrypt` implementation is that it includes helper functions
 go get golang.org/x/crypto/bcrypt@latest
 ```
 
+⚠️ Some databases provide built-in functions for password hashing.
+It's still recommended to implement your own, as we did, in Go. (GitHub & Twitter incidents in 2018)
+
+```go
+// insert
+hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 12)
+
+// auth
+err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
+if err != nil {
+    if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+        return 0, ErrInvalidCredentials
+    } else {
+        return 0, err
+    }
+}
+
+```
+
 ## MiSK
 
 ### r

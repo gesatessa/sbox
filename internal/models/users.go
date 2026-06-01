@@ -51,3 +51,34 @@ func (m *UserModel) Insert(name, email, password string) error {
 
 	return nil
 }
+
+// if the usere is not registered, or the credentials don't match, return `ErrInvalidCredentials`
+func (m *UserModel) Authenticate(email, password string) (int, error) {
+	var (
+		id             int
+		hashedPassword []byte
+	)
+
+	q := `SELECT id, hashed_password FROM users WHERE email = ?`
+
+	err := m.DB.QueryRow(q, email).Scan(&id, &hashedPassword)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, ErrInvalidCredentials
+		} else {
+			return 0, err
+		}
+	}
+
+	err = bcrypt.CompareHashAndPassword(hashedPassword, []byte(password))
+	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return 0, ErrInvalidCredentials
+		} else {
+			return 0, err
+		}
+	}
+
+	// if the credentials match, return the user ID.
+	return id, nil
+}
