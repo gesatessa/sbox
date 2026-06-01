@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"regexp"
 	"slices"
 	"strings"
 	"unicode/utf8"
@@ -10,6 +11,10 @@ import (
 type Validator struct {
 	FieldErrors map[string]string
 }
+
+// this returns a pointer to a `compiled` regexp.Regexp type,
+// or panics in the event of an error.
+var EmailRX = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)+$")
 
 func (v *Validator) Valid() bool {
 	return len(v.FieldErrors) == 0
@@ -48,6 +53,11 @@ func MinChars(val string, n int) bool {
 // returns true if `val` contains n bytes or less
 func MaxBytes(val string, n int) bool {
 	return len(val) <= n
+}
+
+// returns true, if the value matches the provided compiled regular expression pattern.
+func Matches(val string, rx *regexp.Regexp) bool {
+	return rx.MatchString(val)
 }
 
 func PermittedValue[T comparable](val T, permittedValues ...T) bool {

@@ -134,27 +134,36 @@ func (app *application) userSignUpPost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	form.CheckField(validator.NotBlank(form.Name), "name", "name cannot be blank")
-	form.CheckField(validator.NotBlank(form.Email), "email", "email cannot be blank")
+	// form.CheckField(validator.NotBlank(form.Email), "email", "email cannot be blank")
+	form.CheckField(validator.Matches(form.Email, validator.EmailRX), "email", "enter a valid email address")
 
 	form.CheckField(validator.MinChars(form.Password, 8), "password", "password must be at least 8 charactors long")
 	form.CheckField(validator.MaxBytes(form.Password, 72), "password", "password must not be more than 72 bytes long")
-
-	// @TODO: add check for valid email addresses.
 
 	if !form.Valid() {
 		data := app.newTemplateData(r)
 		data.Form = form
 		app.render(w, r, http.StatusUnprocessableEntity, "signup.tpl.html", data)
-	}
-
-	err = app.users.Insert(form.Name, form.Email, form.Password)
-	// @TODO: right now every database error is treated as a 500 Internal Server Error.
-	if err != nil {
-		app.serverError(w, r, err)
 		return
 	}
 
+	err = app.users.Insert(form.Name, form.Email, form.Password)
+	if err != nil {
+		if errors.Is(err, models.ErrDuplicateEmail) {
+			form.AddFieldError("email", "email address already registered")
+
+			data := app.newTemplateData(r)
+			data.Form = form
+			app.render(w, r, http.StatusUnprocessableEntity, "signup.tpl.html", data)
+		} else {
+			app.serverError(w, r, err)
+		}
+
+		return
+	}
+	// add a confirmation flash message that user signup worked.
 	app.sessionManager.Put(r.Context(), "flash", "Your signup was successful. Please login.")
+	app.logger.Info("a new user signed up", "email", form.Email)
 
 	http.Redirect(w, r, "/user/login", http.StatusSeeOther)
 }
