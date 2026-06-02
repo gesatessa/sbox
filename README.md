@@ -535,12 +535,26 @@ var Files embed.FS
 // cmd/web/routes.go -----
 mux.Handle("GET /static/", http.FileServerFS(ui.Files))
 ```
-```sh
 
+```sh
 curl -i localhost:8080/static/js/main.js
 ```
 
 ### embedding HTML templates
+WE update `newTemplateCache()` to use embedded HTML template files from `ui.Files`, instead of reading them from the hard disk at runtime.
+
+- `fs.Glob()`: similar to `filepath.Glob()` but for embedded filesystems.
+- `Template.ParseFS()`: to parse the HTML templates from an embedded filesystem into a template set.
+
+```sh
+go build -o /tmp/web ./cmd/web
+
+# cp -r ./tls /tmp/
+
+/tmp/web
+# {"time":"2026-06-02T15:07:05.064179162+02:00","level":"INFO","msg":"starting server","addr":":8080"}
+```
+
 
 
 ## MiSK

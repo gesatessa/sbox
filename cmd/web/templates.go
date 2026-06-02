@@ -2,10 +2,12 @@ package main
 
 import (
 	"html/template"
+	"io/fs"
 	"path/filepath"
 	"time"
 
 	"github.com/gesatessa/sbox/internal/models"
+	"github.com/gesatessa/sbox/ui"
 )
 
 // templateData is a struct that holds the dynamic data
@@ -36,33 +38,61 @@ var funcs = template.FuncMap{
 	"humanDate": humanDate,
 }
 
-func newTemplateCache() (map[string]*template.Template, error) {
-	// initialize a new map to act as the cache
-	data := map[string]*template.Template{}
+// func newTemplateCache() (map[string]*template.Template, error) {
+// 	// initialize a new map to act as the cache
+// 	data := map[string]*template.Template{}
 
-	pages, err := filepath.Glob("./ui/html/pages/*.tpl.html")
+// 	pages, err := filepath.Glob("./ui/html/pages/*.tpl.html")
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	for _, page := range pages {
+// 		// get the fileName from the filePath
+// 		fileName := filepath.Base(page)
+
+// 		files := []string{
+// 			"./ui/html/base.tpl.html",
+// 			"./ui/html/partials/nav.tpl.html",
+// 			page,
+// 		}
+
+// 		// ts, err := template.ParseFiles(files...)
+// 		ts, err := template.New(fileName).Funcs(funcs).ParseFiles(files...)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+
+// 		data[fileName] = ts
+// 	}
+
+// 	return data, nil
+// }
+
+func newTemplateCache() (map[string]*template.Template, error) {
+	cache := map[string]*template.Template{}
+
+	pages, err := fs.Glob(ui.Files, "html/pages/*.tpl.html")
 	if err != nil {
 		return nil, err
 	}
 
 	for _, page := range pages {
-		// get the fileName from the filePath
 		fileName := filepath.Base(page)
 
-		files := []string{
-			"./ui/html/base.tpl.html",
-			"./ui/html/partials/nav.tpl.html",
+		patterns := []string{
+			"html/base.tpl.html",
+			"html/partials/nav.tpl.html",
 			page,
 		}
 
-		// ts, err := template.ParseFiles(files...)
-		ts, err := template.New(fileName).Funcs(funcs).ParseFiles(files...)
+		ts, err := template.New(fileName).Funcs(funcs).ParseFS(ui.Files, patterns...)
 		if err != nil {
 			return nil, err
 		}
 
-		data[fileName] = ts
+		cache[fileName] = ts
 	}
 
-	return data, nil
+	return cache, nil
 }
