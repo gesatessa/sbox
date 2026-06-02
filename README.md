@@ -414,6 +414,19 @@ The `LoadAndServe()` middleware checks each incoming request for a `session cook
 If a session cookie is present, it reads the session token fro the cookie & retrieves the corresponding session data from the database (it checks the expiration data).
 Session data is added to the `request context` so it can be used by the http handlers.
 
+### session manager cmd
+```go
+app.sessionManager.PopString(r.Context(), "flash")
+
+app.sessionManager.Put(r.Context(), "authenticatedUserID", id)
+app.sessionManager.Remove(r.Context(), "authenticatedUserID")
+id := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+
+app.sessionManager.Exists(r.Context(), "authenticatedUserID")
+
+
+```
+
 ## Server & Security Improvements
 
 ### http.Server
@@ -459,6 +472,47 @@ if err != nil {
 
 An authenticated user visiting `/snippet/create` should be redirected to `/user/login`.
 We can do this via **middleware**. And adding it the the routes we want to protect.
+
+
+## request context
+Every `http.Request` has a `context.Context` value embedded in it, holding information during the lifetime of the request.
+A common use case for this is:
+> To pass information between the middleware & other handlres.
+e.g., check once (hence, hitting db just once) in a middleware if a use is authenticated, and share it with downstream middlewares & handlres.
+
+To add information to a request's context 👇
+```go
+// assuming `r` is a *http.Request
+
+// create a new, updated, "copy" of the existing context
+ctx = context.WithValue(r.Context(), "isAuthenticated", true)
+
+r = r.WithContext(ctx)
+
+```
+📢 Behind the scenes, `request context values` are stored with the type `any`.
+
+To retrieve a value 👇
+```go
+isAuthenticated, ok := r.Context().Value("isAuthenticated").(bool)
+if !ok {
+    return errors.New("could not convert value to bool")
+}
+```
+
+⚠️ key/naming collision
+> create your own custom type and use it for context keys
+```go
+type contextKey string
+
+const isAuthenticatedCtxKey = contextKey("isAuthenticated")
+```
+
+### misusing request context
+> Use context values ONLY for request-scoped data that transits processes & APIs.
+
+=> DO NOT use it to pass dependencies that exist outside the lifetime of a request
+e.g., loggers, template caches, or the database connection pool
 
 ## MiSK
 
@@ -583,6 +637,9 @@ curl -i -X POST localhost:8080/
 
 # -L: automatically follow redirect
 curl -iL -d "" localhost:8080/snippet/create
+
+# 
+curl -ki -d "" localhost:8080/snippet/create
 ```
 
 ### str

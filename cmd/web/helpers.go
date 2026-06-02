@@ -76,6 +76,17 @@ func (app *application) decodePostForm(r *http.Request, dst any) error {
 	return nil
 }
 
+// func (app *application) isAuthenticated(r *http.Request) bool {
+// 	return app.sessionManager.Exists(r.Context(), "authenticatedUserID")
+// }
+
+// instead of checking the session data,
+// we can check the request context for the "isAuthenticated" value, which is set by the `authenticate` middleware.
 func (app *application) isAuthenticated(r *http.Request) bool {
-	return app.sessionManager.Exists(r.Context(), "authenticatedUserID")
+	isAuthenticated, ok := r.Context().Value(isAuthenticatedCtxKey).(bool)
+	// if !ok {
+	// 	return false
+	// }
+	// return isAuthenticated
+	return ok && isAuthenticated
 }

@@ -82,3 +82,12 @@ func (m *UserModel) Authenticate(email, password string) (int, error) {
 	// if the credentials match, return the user ID.
 	return id, nil
 }
+
+func (m *UserModel) Exists(id int) (bool, error) {
+	var exists bool
+
+	q := `SELECT EXISTS(SELECT true FROM users WHERE id = ?)` // 0/1
+
+	err := m.DB.QueryRow(q, id).Scan(&exists)
+	return exists, err
+}

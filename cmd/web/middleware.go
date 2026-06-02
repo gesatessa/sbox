@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 )
@@ -65,6 +66,37 @@ func (app *application) requireAuth(next http.Handler) http.Handler {
 		// make sure pages requiring authentication are NOT stored in the users' browser cache;
 		// or any other intermediary cache.
 		w.Header().Add("Cache-Control", "no-store")
+
+		// call the next handler in the chain.
+		next.ServeHTTP(w, r)
+	})
+}
+
+// NOTE: http.Request is designed to be immutable
+// If middleware could freely mutate the request object in-place,
+// it would be harder to reason about who changed what.
+// Also, is it actually copying everything? No. It's a shallow copy.
+func (app *application) authenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// if no "authenticatedUserID" value in the session, it'll return 0.
+		id := app.sessionManager.GetInt(r.Context(), "authenticatedUserID")
+		if id == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// otherwise, check if the user ID exists in the database.
+		// If it does, then we know the user is authenticated.
+		exists, err := app.users.Exists(id)
+		if err != nil {
+			app.serverError(w, r, err)
+			return
+		}
+
+		if exists {
+			ctx := context.WithValue(r.Context(), isAuthenticatedCtxKey, true)
+			r = r.WithContext(ctx)
+		}
 
 		// call the next handler in the chain.
 		next.ServeHTTP(w, r)
