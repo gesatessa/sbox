@@ -514,6 +514,35 @@ const isAuthenticatedCtxKey = contextKey("isAuthenticated")
 => DO NOT use it to pass dependencies that exist outside the lifetime of a request
 e.g., loggers, template caches, or the database connection pool
 
+
+## file embedding
+
+The `embed` package from the Go standard library makes it possible to embed external fiels into our Go program.
+
+This makes it possible to create Go programs that are self-contained and have everything that they need to run as part of the `compiled binary execution`, which makes it easier to deploy or distribute our web apps.
+
+### embedding static files
+
+```go
+// ui/efs.go -----
+package ui
+
+import "embed"
+
+//go:embed "static"
+var Files embed.FS
+
+// cmd/web/routes.go -----
+mux.Handle("GET /static/", http.FileServerFS(ui.Files))
+```
+```sh
+
+curl -i localhost:8080/static/js/main.js
+```
+
+### embedding HTML templates
+
+
 ## MiSK
 
 ### r

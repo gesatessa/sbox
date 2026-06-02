@@ -3,14 +3,16 @@ package main
 import (
 	"net/http"
 
+	"github.com/gesatessa/sbox/ui"
 	"github.com/justinas/alice"
 )
 
 func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
 
-	fileServer := http.FileServer(http.Dir(app.cfg.static))
-	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
+	// fileServer := http.FileServer(http.Dir(app.cfg.static))
+	// mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
+	mux.Handle("GET /static/", http.FileServerFS(ui.Files))
 
 	// dynamic middleware chain
 	dynamic := alice.New(app.sessionManager.LoadAndSave, app.authenticate)
