@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+
+	"github.com/justinas/nosurf"
 )
 
 func commonHeaders(next http.Handler) http.Handler {
@@ -101,4 +103,19 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 		// call the next handler in the chain.
 		next.ServeHTTP(w, r)
 	})
+}
+
+func preventCSRF(next http.Handler) http.Handler {
+	csrfHandler := nosurf.New(next)
+	// set the base cookie for CSRF token to be HttpOnly and Secure, and with a path of "/".
+	// This means the cookie will be sent with all requests to our application, but it won't be accessible via JavaScript.
+	// This is a good security practice because it helps to prevent cross-site scripting (XSS) attacks from stealing the CSRF token.
+	csrfHandler.SetBaseCookie(http.Cookie{
+		HttpOnly: true,
+		Path:     "/",
+		Secure:   true,
+		// SameSite: http.SameSiteLaxMode,
+	})
+
+	return csrfHandler
 }

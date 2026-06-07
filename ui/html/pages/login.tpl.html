@@ -2,6 +2,7 @@
 
 {{define "main"}}
 <form action="/user/login" method="POST">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
     <!-- loop over the NonFieldErrors & display them -->
     {{range .Form.NonFieldErrors}}
         <div class="error">{{.}}</div>

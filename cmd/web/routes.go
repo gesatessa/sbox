@@ -15,7 +15,7 @@ func (app *application) routes() http.Handler {
 	mux.Handle("GET /static/", http.FileServerFS(ui.Files))
 
 	// dynamic middleware chain
-	dynamic := alice.New(app.sessionManager.LoadAndSave, app.authenticate)
+	dynamic := alice.New(app.sessionManager.LoadAndSave, app.authenticate, preventCSRF)
 
 	// alice.ThenFunc() returns `http.Handler` (and not http.HandlerFunc)
 	mux.Handle("GET /{$}", dynamic.ThenFunc(app.home))
